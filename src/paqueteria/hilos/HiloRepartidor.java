@@ -15,12 +15,14 @@ public class HiloRepartidor extends HiloTrabajador {
 
     private static final int INTENTOS_DE_CARGA = 8;
     private static final long ESPERA_ENTRE_CARGAS = 250;
+    private static final int PROBABILIDAD_AUSENTE = 30;
 
     private final int id;
     private final int capacidad;
     private final String ruta;
     private final ZonaLogistica expedicion;
     private final ZonaLogistica entregados;
+    private final ZonaLogistica devueltos;
     private final Estadisticas estadisticas;
     private final Random azar = new Random();
 
@@ -32,7 +34,7 @@ public class HiloRepartidor extends HiloTrabajador {
     private volatile int entregasRealizadas;
 
     public HiloRepartidor(int id, int capacidad, String ruta, ZonaLogistica expedicion,
-                          ZonaLogistica entregados, ControlSimulacion control,
+                          ZonaLogistica entregados, ZonaLogistica devueltos, ControlSimulacion control,
                           Registro registro, Estadisticas estadisticas) {
         super("Repartidor-" + id, control, registro);
         this.id = id;
@@ -40,6 +42,7 @@ public class HiloRepartidor extends HiloTrabajador {
         this.ruta = ruta;
         this.expedicion = expedicion;
         this.entregados = entregados;
+        this.devueltos = devueltos;
         this.estadisticas = estadisticas;
     }
 
@@ -87,11 +90,38 @@ public class HiloRepartidor extends HiloTrabajador {
             }
             dormir(500 + azar.nextInt(500));
 
-            paquete.cambiarEstado(EstadoPaquete.ENTREGADO);
-            entregados.poner(paquete);
-            entregasRealizadas++;
-            estadisticas.paqueteEntregado(id, paquete.tiempoEnSistema());
-            registro.anotar(paquete + " entregado por " + getName());
+            if (azar.nextInt(100) < PROBABILIDAD_AUSENTE) {
+                gestionarAusencia(paquete);
+            } else {
+                completarEntrega(paquete);
+            }
+        }
+    }
+
+    private void completarEntrega(Paquete paquete) throws InterruptedException {
+        paquete.cambiarEstado(EstadoPaquete.ENTREGADO);
+        entregados.poner(paquete);
+        entregasRealizadas++;
+        estadisticas.paqueteEntregado(id, paquete.tiempoEnSistema());
+        registro.anotar(paquete + " entregado por " + getName());
+    }
+
+    private void gestionarAusencia(Paquete paquete) throws InterruptedException {
+        paquete.cambiarEstado(EstadoPaquete.NUEVO_INTENTO);
+        paquete.registrarIntento();
+        registro.anotar(paquete + " intento " + paquete.getIntentos() + ": cliente ausente");
+
+        if (paquete.agotoIntentos()) {
+            paquete.cambiarEstado(EstadoPaquete.DEVUELTO);
+            devueltos.poner(paquete);
+            estadisticas.paqueteDevuelto();
+            registro.anotar(paquete + " DEVUELTO tras " + paquete.getIntentos() + " intentos");
+            return;
+        }
+        // Vuelve al final de la carga: se reintenta tras el resto del reparto.
+        paquete.cambiarEstado(EstadoPaquete.EN_REPARTO);
+        synchronized (candadoCarga) {
+            carga.agregar(paquete);
         }
     }
 

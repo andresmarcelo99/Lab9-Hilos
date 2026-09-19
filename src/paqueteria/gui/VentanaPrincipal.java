@@ -38,12 +38,14 @@ public class VentanaPrincipal extends JFrame {
     private final JButton reanudar = new JButton("REANUDAR");
     private final JButton detener = new JButton("DETENER");
     private final JButton reiniciar = new JButton("REINICIAR");
+    private final JButton estadisticas = new JButton("ESTADISTICAS");
     private final JLabel resumen = new JLabel();
 
     private final PanelZona panelRecepcion;
     private final PanelZona panelAlmacen;
     private final PanelZona panelClasificacion;
     private final PanelZona panelEntregados;
+    private final PanelZona panelDevueltos;
     private final PanelZona[] panelesExpedicion;
 
     private final JLabel[] etiquetasClasificadores = new JLabel[3];
@@ -52,6 +54,7 @@ public class VentanaPrincipal extends JFrame {
 
     private final JTextArea log = new JTextArea();
     private String ultimoLog = "";
+    private PanelEstadisticas dialogoEstadisticas;
 
     public VentanaPrincipal() {
         super("Centro Logistico - Sistema de Paqueteria");
@@ -63,6 +66,7 @@ public class VentanaPrincipal extends JFrame {
         panelAlmacen = new PanelZona(simulacion.getAlmacen());
         panelClasificacion = new PanelZona(simulacion.getClasificacion());
         panelEntregados = new PanelZona(simulacion.getEntregados());
+        panelDevueltos = new PanelZona(simulacion.getDevueltos());
         panelesExpedicion = new PanelZona[Simulacion.RUTAS.length];
         tarjetas = new TarjetaRepartidor[Simulacion.RUTAS.length];
 
@@ -83,7 +87,7 @@ public class VentanaPrincipal extends JFrame {
         JPanel botones = new JPanel();
         botones.setOpaque(false);
         botones.setLayout(new BoxLayout(botones, BoxLayout.X_AXIS));
-        for (JButton boton : new JButton[]{iniciar, pausar, reanudar, detener, reiniciar}) {
+        for (JButton boton : new JButton[]{iniciar, pausar, reanudar, detener, reiniciar, estadisticas}) {
             botones.add(boton);
             botones.add(Box.createHorizontalStrut(6));
         }
@@ -109,13 +113,14 @@ public class VentanaPrincipal extends JFrame {
         filaEtapas.add(panelAlmacen);
         filaEtapas.add(panelClasificacion);
 
-        JPanel filaExpedicion = new JPanel(new GridLayout(1, Simulacion.RUTAS.length + 1, 8, 0));
+        JPanel filaExpedicion = new JPanel(new GridLayout(1, Simulacion.RUTAS.length + 2, 8, 0));
         filaExpedicion.setOpaque(false);
         for (int i = 0; i < Simulacion.RUTAS.length; i++) {
             panelesExpedicion[i] = new PanelZona(simulacion.getExpedicion(i));
             filaExpedicion.add(panelesExpedicion[i]);
         }
         filaExpedicion.add(panelEntregados);
+        filaExpedicion.add(panelDevueltos);
 
         JPanel filaRepartidores = new JPanel(new GridLayout(1, Simulacion.RUTAS.length, 8, 0));
         filaRepartidores.setOpaque(false);
@@ -127,14 +132,22 @@ public class VentanaPrincipal extends JFrame {
         JPanel cuerpo = new JPanel();
         cuerpo.setOpaque(false);
         cuerpo.setLayout(new BoxLayout(cuerpo, BoxLayout.Y_AXIS));
-        cuerpo.add(filaEtapas);
+        cuerpo.add(fijarAltura(filaEtapas, 190));
         cuerpo.add(Box.createVerticalStrut(8));
         cuerpo.add(panelTrabajadores());
         cuerpo.add(Box.createVerticalStrut(8));
         cuerpo.add(filaExpedicion);
         cuerpo.add(Box.createVerticalStrut(8));
-        cuerpo.add(filaRepartidores);
+        cuerpo.add(fijarAltura(filaRepartidores, 170));
         return cuerpo;
+    }
+
+    // BoxLayout reparte el alto sobrante; sin un tope las filas de arriba se
+    // quedan tan bajas que cortan los codigos por la mitad.
+    private JPanel fijarAltura(JPanel panel, int alto) {
+        panel.setPreferredSize(new Dimension(0, alto));
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, alto));
+        return panel;
     }
 
     private JPanel panelTrabajadores() {
@@ -192,6 +205,14 @@ public class VentanaPrincipal extends JFrame {
         reanudar.addActionListener(e -> enSegundoPlano(simulacion::reanudar));
         detener.addActionListener(e -> enSegundoPlano(simulacion::detener));
         reiniciar.addActionListener(e -> enSegundoPlano(simulacion::reiniciar));
+        estadisticas.addActionListener(e -> mostrarEstadisticas());
+    }
+
+    private void mostrarEstadisticas() {
+        if (dialogoEstadisticas == null) {
+            dialogoEstadisticas = new PanelEstadisticas(this);
+        }
+        dialogoEstadisticas.setVisible(true);
     }
 
     private void enSegundoPlano(Runnable accion) {
@@ -210,6 +231,7 @@ public class VentanaPrincipal extends JFrame {
         panelAlmacen.actualizar();
         panelClasificacion.actualizar();
         panelEntregados.actualizar();
+        panelDevueltos.actualizar();
         for (PanelZona panel : panelesExpedicion) {
             panel.actualizar();
         }
@@ -218,6 +240,9 @@ public class VentanaPrincipal extends JFrame {
         refrescarRepartidores();
         refrescarResumen();
         refrescarLog();
+        if (dialogoEstadisticas != null && dialogoEstadisticas.isVisible()) {
+            dialogoEstadisticas.actualizar(simulacion.getEstadisticas(), simulacion.getRepartidores());
+        }
     }
 
     private void refrescarTrabajadores() {

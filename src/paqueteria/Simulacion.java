@@ -27,6 +27,7 @@ public class Simulacion {
     private final ZonaLogistica almacen = new ZonaLogistica("ALMACEN", 20);
     private final ZonaLogistica clasificacion = new ZonaLogistica("CLASIFICACION", 10);
     private final ZonaLogistica entregados = new ZonaLogistica("ENTREGADOS", ZonaLogistica.SIN_LIMITE);
+    private final ZonaLogistica devueltos = new ZonaLogistica("DEVUELTOS", ZonaLogistica.SIN_LIMITE);
     private final ZonaLogistica[] expedicion = new ZonaLogistica[RUTAS.length];
 
     private ListaEnlazada<HiloTrabajador> hilos = new ListaEnlazada<>();
@@ -86,6 +87,7 @@ public class Simulacion {
         almacen.limpiar();
         clasificacion.limpiar();
         entregados.limpiar();
+        devueltos.limpiar();
         for (ZonaLogistica zona : expedicion) {
             zona.limpiar();
         }
@@ -114,7 +116,7 @@ public class Simulacion {
         }
         for (int i = 0; i < RUTAS.length; i++) {
             repartidores[i] = new HiloRepartidor(i + 1, CAPACIDAD_VEHICULO[i], RUTAS[i],
-                    expedicion[i], entregados, control, registro, estadisticas);
+                    expedicion[i], entregados, devueltos, control, registro, estadisticas);
             hilos.agregar(repartidores[i]);
         }
     }
@@ -145,6 +147,10 @@ public class Simulacion {
 
     public ZonaLogistica getEntregados() {
         return entregados;
+    }
+
+    public ZonaLogistica getDevueltos() {
+        return devueltos;
     }
 
     public ZonaLogistica getExpedicion(int indiceRuta) {
