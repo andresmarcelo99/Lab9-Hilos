@@ -18,10 +18,25 @@ public class HiloAlmacenista extends HiloTrabajador {
         this.almacen = almacen;
     }
 
+    private static final int PAQUETES_POR_VIAJE = 3;
+
     @Override
     protected void trabajar() throws InterruptedException {
-        Paquete paquete = recepcion.tomar();
-        dormir(500);
+        Paquete primero = recepcion.tomar();
+        dormir(900);
+        almacenar(primero);
+
+        // Cada viaje sube hasta tres paquetes a las estanterias.
+        for (int i = 1; i < PAQUETES_POR_VIAJE; i++) {
+            Paquete siguiente = recepcion.tomarSiHay();
+            if (siguiente == null) {
+                return;
+            }
+            almacenar(siguiente);
+        }
+    }
+
+    private void almacenar(Paquete paquete) throws InterruptedException {
         paquete.cambiarEstado(EstadoPaquete.ALMACENADO);
         almacen.poner(paquete);
         registro.anotar(paquete + " almacenado");

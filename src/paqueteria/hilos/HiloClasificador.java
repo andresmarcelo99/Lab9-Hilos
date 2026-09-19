@@ -41,7 +41,7 @@ public class HiloClasificador extends HiloTrabajador {
         paquete.cambiarEstado(EstadoPaquete.CLASIFICANDO);
         registro.anotar(paquete + " tomado por " + getName());
 
-        dormir(800);
+        dormir(3000);
 
         paquete.setRuta(rutaDe(paquete.getCiudad()));
         paquete.cambiarEstado(EstadoPaquete.CLASIFICADO);

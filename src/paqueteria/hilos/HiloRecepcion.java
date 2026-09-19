@@ -37,13 +37,18 @@ public class HiloRecepcion extends HiloTrabajador {
 
     @Override
     protected void trabajar() throws InterruptedException {
-        dormir(1000 + azar.nextInt(1000));
+        dormir(1200 + azar.nextInt(900));
 
-        Paquete paquete = generar();
-        recepcion.poner(paquete);
-        estadisticas.paqueteGenerado();
-        registro.anotar(paquete + " recibido (" + paquete.getCiudad()
-                + ", " + paquete.getPeso() + " kg, " + paquete.getPrioridad() + ")");
+        // Una entrega puede traer varios paquetes de golpe. Esa irregularidad es
+        // la que hace que se formen colas en las zonas siguientes.
+        int lote = azar.nextInt(4) == 0 ? 3 : 1;
+        for (int i = 0; i < lote; i++) {
+            Paquete paquete = generar();
+            recepcion.poner(paquete);
+            estadisticas.paqueteGenerado();
+            registro.anotar(paquete + " recibido (" + paquete.getCiudad()
+                    + ", " + paquete.getPeso() + " kg, " + paquete.getPrioridad() + ")");
+        }
     }
 
     private Paquete generar() {
