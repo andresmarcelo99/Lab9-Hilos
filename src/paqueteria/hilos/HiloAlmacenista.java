@@ -8,6 +8,8 @@ import paqueteria.modelo.Paquete;
 
 public class HiloAlmacenista extends HiloTrabajador {
 
+    private static final int PAQUETES_POR_VIAJE = 3;
+
     private final ZonaLogistica recepcion;
     private final ZonaLogistica almacen;
 
@@ -17,8 +19,6 @@ public class HiloAlmacenista extends HiloTrabajador {
         this.recepcion = recepcion;
         this.almacen = almacen;
     }
-
-    private static final int PAQUETES_POR_VIAJE = 3;
 
     @Override
     protected void trabajar() throws InterruptedException {
